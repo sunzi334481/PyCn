@@ -21,9 +21,13 @@ from .importer import install as install_import_hook
 
 def _read_source(path: Path) -> str:
     try:
-        return path.read_text(encoding="utf-8")
+        # utf-8-sig：兼容记事本等工具保存时附带的 BOM
+        return path.read_text(encoding="utf-8-sig")
     except FileNotFoundError:
         print(f"错误：找不到文件 {path}", file=sys.stderr)
+        raise SystemExit(2)
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"错误：无法读取 {path}（{exc}）", file=sys.stderr)
         raise SystemExit(2)
 
 
@@ -39,44 +43,57 @@ def cmd_run(script: str, script_args: list[str]) -> int:
 
     # 模拟 Python：脚本目录置于模块搜索路径首位
     script_dir = str(path.parent)
+    old_argv = sys.argv
+    path_snapshot = list(sys.path)
     if script_dir in sys.path:
         sys.path.remove(script_dir)
     sys.path.insert(0, script_dir)
-
     sys.argv = [str(path)] + script_args
 
-    source = _read_source(path)
-    translated = translate(source)
     try:
-        code_obj = compile(translated, str(path), "exec")
-    except SyntaxError as exc:
-        # 转译后语法错误（通常是源码语法问题），直接展示
-        print(f"语法错误：{exc}", file=sys.stderr)
-        return 1
+        source = _read_source(path)
+        translated = translate(source)
+        try:
+            code_obj = compile(translated, str(path), "exec")
+        except SyntaxError as exc:
+            # 转译后语法错误（通常是源码语法问题），直接展示
+            print(f"语法错误：{exc}", file=sys.stderr)
+            return 1
 
-    module_globals = {
-        "__name__": "__main__",
-        "__file__": str(path),
-        "__builtins__": __builtins__,
-    }
-    try:
-        exec(code_obj, module_globals)
-    except SystemExit as exc:
-        code = exc.code
-        return int(code) if isinstance(code, int) else (0 if code is None else 1)
-    except KeyboardInterrupt:
-        print("\n键盘中断", file=sys.stderr)
-        return 130
-    except BaseException:
-        # traceback 会通过 linecache 直接显示 .pycn 中文源码行
-        import traceback
-        traceback.print_exc()
-        return 1
-    return 0
+        module_globals = {
+            "__name__": "__main__",
+            "__file__": str(path),
+            "__builtins__": __builtins__,
+        }
+        try:
+            exec(code_obj, module_globals)
+        except SystemExit as exc:
+            code = exc.code
+            return int(code) if isinstance(code, int) else (0 if code is None else 1)
+        except KeyboardInterrupt:
+            print("\n键盘中断", file=sys.stderr)
+            return 130
+        except Exception as exc:
+            # 剥掉本函数内部帧，traceback 从 .pycn 源码开始展示
+            import traceback
+            tb = exc.__traceback__
+            if tb is not None:
+                tb = tb.tb_next
+            traceback.print_exception(type(exc), exc, tb)
+            return 1
+        return 0
+    finally:
+        sys.path[:] = path_snapshot
+        sys.argv = old_argv
 
 
 def cmd_compile(script: str, output: str | None) -> int:
     path = Path(script).resolve()
+    if not path.is_file():
+        print(f"错误：找不到文件 {path}", file=sys.stderr)
+        return 2
+    if path.suffix != ".pycn":
+        print(f"警告：{path.name} 不是 .pycn 文件，仍尝试按 PyCn 解析", file=sys.stderr)
     source = _read_source(path)
     translated = translate(source)
     header = "# -*- coding: utf-8 -*-\n# 本文件由 PyCn 自动转译生成，原始文件：{}\n\n".format(path.name)
@@ -84,12 +101,20 @@ def cmd_compile(script: str, output: str | None) -> int:
 
     if output is None:
         out_path = path.with_suffix(".py")
-        out_path.write_text(result, encoding="utf-8")
+        try:
+            out_path.write_text(result, encoding="utf-8")
+        except OSError as exc:
+            print(f"错误：无法写入 {out_path}（{exc}）", file=sys.stderr)
+            return 1
         print(f"已生成 {out_path}")
     elif output == "-":
         sys.stdout.write(result)
     else:
-        Path(output).write_text(result, encoding="utf-8")
+        try:
+            Path(output).write_text(result, encoding="utf-8")
+        except OSError as exc:
+            print(f"错误：无法写入 {output}（{exc}）", file=sys.stderr)
+            return 1
         print(f"已生成 {output}")
     return 0
 

@@ -29,9 +29,14 @@ class PycnLoader:
         return None  # 使用默认模块对象
 
     def exec_module(self, module):
-        source = Path(self.path).read_text(encoding="utf-8")
+        source = Path(self.path).read_text(encoding="utf-8-sig")
         translated = translate(source)
         code = compile(translated, self.path, "exec")
+        # 注册原文到 linecache：traceback / inspect 显示中文源码而非转译后的英文
+        import linecache
+        linecache.cache[self.path] = (
+            len(source), None, [ln + "\n" for ln in source.splitlines()], self.path,
+        )
         module.__file__ = self.path
         exec(code, module.__dict__)
 
