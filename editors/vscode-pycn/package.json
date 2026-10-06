@@ -1,0 +1,121 @@
+{
+  "name": "pycn",
+  "displayName": "PyCn 中文编程语言",
+  "description": "使用全中文语法编写 Python（.pycn）：语法高亮、代码片段、一键运行",
+  "version": "0.1.0",
+  "publisher": "pycn-lang",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "中文",
+    "python",
+    "pycn",
+    "chinese"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:pycn"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "pycn",
+        "aliases": [
+          "PyCn",
+          "pycn",
+          "中文Python"
+        ],
+        "extensions": [
+          ".pycn"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "pycn",
+        "scopeName": "source.pycn",
+        "path": "./syntaxes/pycn.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "pycn",
+        "path": "./snippets/snippets.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "pycn.runFile",
+        "title": "运行 PyCn 文件",
+        "icon": "$(play)"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "pycn.runFile",
+          "when": "resourceLangId == pycn",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "pycn.runFile",
+          "when": "resourceLangId == pycn",
+          "group": "pycn@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "pycn.runFile",
+          "when": "resourceLangId == pycn",
+          "group": "pycn@1"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "pycn.runFile",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "editorTextFocus && resourceLangId == pycn"
+      }
+    ],
+    "configuration": {
+      "title": "PyCn",
+      "properties": {
+        "pycn.runner": {
+          "type": "string",
+          "enum": [
+            "module",
+            "pycn"
+          ],
+          "enumDescriptions": [
+            "使用 python -m pycn_lang run（无需配置 PATH，推荐）",
+            "使用 pycn run（需要 pycn 命令在 PATH 中）"
+          ],
+          "default": "module",
+          "description": "选择运行 .pycn 文件的方式。"
+        },
+        "pycn.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python 解释器命令或完整路径。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "package": "vsce package --no-dependencies -o pycn-vscode.vsix"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.2.0"
+  }
+}

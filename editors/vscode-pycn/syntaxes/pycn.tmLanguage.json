@@ -1,0 +1,230 @@
+{
+  "scopeName": "source.pycn",
+  "patterns": [
+    { "include": "#encoding-line" },
+    { "include": "#comments" },
+    { "include": "#decorator" },
+    { "include": "#strings" },
+    { "include": "#constants-language" },
+    { "include": "#definitions" },
+    { "include": "#keywords-control" },
+    { "include": "#keywords-other" },
+    { "include": "#operators-logical" },
+    { "include": "#exceptions" },
+    { "include": "#builtins" },
+    { "include": "#self" },
+    { "include": "#numbers" },
+    { "include": "#function-call" },
+    { "include": "#operators" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "encoding-line": {
+      "match": "^#!.*$|^#.*coding[:=].*$",
+      "name": "comment.line.shebang.pycn"
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.pycn",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "decorator": {
+      "patterns": [
+        {
+          "name": "entity.name.function.decorator.pycn",
+          "match": "@[\\u4e00-\\u9fffA-Za-z0-9_.]+"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.interpolated.multi.pycn",
+          "begin": "(?:格|格原|原格|f|fr|rf)(\"\"\"|''')",
+          "end": "\\1",
+          "patterns": [{ "include": "#fstring-body" }]
+        },
+        {
+          "name": "string.quoted.multi.pycn",
+          "begin": "(?:原|字|原字|字原|r|b|br|rb)?(\"\"\"|''')",
+          "end": "\\1",
+          "patterns": [
+            {
+              "name": "constant.character.escape.pycn",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.interpolated.single.pycn",
+          "begin": "(?:格|格原|原格|f|fr|rf)(\"|')",
+          "end": "\\1",
+          "patterns": [{ "include": "#fstring-body" }]
+        },
+        {
+          "name": "string.quoted.double.pycn",
+          "match": "(?:原|字|原字|字原|r|b|br|rb)?\"(?:\\\\.|[^\"\\\\\\n])*\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.pycn",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.pycn",
+          "match": "(?:原|字|原字|字原|r|b|br|rb)?'(?:\\\\.|[^'\\\\\\n])*'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.pycn",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "fstring-body": {
+      "patterns": [
+        {
+          "name": "constant.character.escape.pycn",
+          "match": "\\\\."
+        },
+        {
+          "name": "constant.character.escape.pycn",
+          "match": "\\{\\{\\|\\}\\}"
+        },
+        {
+          "name": "constant.other.placeholder.pycn",
+          "match": "\\{[^{}]*\\}"
+        }
+      ]
+    },
+    "constants-language": {
+      "patterns": [
+        {
+          "name": "constant.language.pycn",
+          "match": "(?<![\\u4e00-\\u9fff])(真|假|空|省略号|未实现)(?![\\u4e00-\\u9fff])"
+        }
+      ]
+    },
+    "definitions": {
+      "patterns": [
+        {
+          "match": "(定义)\\s+([\\u4e00-\\u9fffA-Za-z_][\\u4e00-\\u9fffA-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.def.pycn" },
+            "2": { "name": "entity.name.function.pycn" }
+          }
+        },
+        {
+          "match": "(类)\\s+([\\u4e00-\\u9fffA-Za-z_][\\u4e00-\\u9fffA-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.class.pycn" },
+            "2": { "name": "entity.name.class.pycn" }
+          }
+        }
+      ]
+    },
+    "keywords-control": {
+      "patterns": [
+        {
+          "name": "keyword.control.pycn",
+          "match": "(?<![\\u4e00-\\u9fff])(如果|否则若|否则|对于|在|当|跳出|继续|返回|生成|来自|匹配|情形|是)(?![\\u4e00-\\u9fff])"
+        }
+      ]
+    },
+    "keywords-other": {
+      "patterns": [
+        {
+          "name": "keyword.other.pycn",
+          "match": "(?<![\\u4e00-\\u9fff])(尝试|捕获|最终|抛出|导入|从|作为|伴随|断言|删除|全局|非局部|异步|等待|跳过|匿名)(?![\\u4e00-\\u9fff])"
+        }
+      ]
+    },
+    "operators-logical": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.pycn",
+          "match": "(?<![\\u4e00-\\u9fff])(且|或|非|不在|不是)(?![\\u4e00-\\u9fff])"
+        }
+      ]
+    },
+    "exceptions": {
+      "patterns": [
+        {
+          "name": "support.type.exception.pycn",
+          "match": "(?<![\\u4e00-\\u9fff])(根异常|异常|系统退出|键盘中断|生成器退出|停止迭代|停止异步迭代|算术错误|零除错误|溢出错误|浮点错误|断言错误|属性错误|缓冲错误|末尾错误|导入错误|模块未找到错误|查找错误|索引错误|键错误|名称错误|未绑定局部错误|环境错误|阻塞错误|子进程错误|连接错误|连接断开错误|连接拒绝错误|连接重置错误|文件存在错误|文件未找到错误|中断错误|是目录错误|不是目录错误|权限错误|进程查找错误|超时错误|引用错误|运行时错误|未实现错误|递归错误|语法错误|缩进错误|制表符错误|系统错误|类型错误|值错误|万国码错误|编码错误|解码错误|翻译错误|内存错误|警告基类|用户警告|弃用警告|未来警告|挂起弃用警告|语法警告|运行时警告|导入警告|万国码警告|字节警告|资源警告)(?![\\u4e00-\\u9fff])"
+        }
+      ]
+    },
+    "builtins": {
+      "patterns": [
+        {
+          "name": "support.function.builtin.pycn",
+          "match": "(?<![\\u4e00-\\u9fff])(打印|输入|长度|范围|整数|浮点|复数|字符串|布尔|列表|字典|元组|集合|冻结集合|字节|字节数组|内存视图|类型|是实例|是子类|有属性|取属性|设属性|删属性|超类|属性|静态方法|类方法|绝对值|最小值|最大值|求和|排序|反序|枚举|打包|映射|过滤|任一|全部|四舍五入|商余|幂|字符|序号|十六进制|二进制|八进制|可迭代|下一个|切片|打开|求值|执行|编译|帮助|目录|标识|哈希|表示|变量|全局变量|局部变量|断点|退出)(?![\\u4e00-\\u9fff])"
+        }
+      ]
+    },
+    "self": {
+      "patterns": [
+        {
+          "name": "variable.language.this.pycn",
+          "match": "(?<![\\u4e00-\\u9fff])(自己|本类)(?![\\u4e00-\\u9fff])"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.pycn",
+          "match": "\\b0[xX][0-9a-fA-F_]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.pycn",
+          "match": "\\b0[bB][01_]+\\b"
+        },
+        {
+          "name": "constant.numeric.octal.pycn",
+          "match": "\\b0[oO][0-7_]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.pycn",
+          "match": "\\b\\d[\\d_]*\\.\\d[\\d_]*(?:[eE][+-]?\\d[\\d_]*)?[jJ]?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.pycn",
+          "match": "\\b\\d[\\d_]*(?:[eE][+-]?\\d[\\d_]*)?[jJ]?\\b"
+        }
+      ]
+    },
+    "function-call": {
+      "patterns": [
+        {
+          "match": "([\\u4e00-\\u9fffA-Za-z_][\\u4e00-\\u9fffA-Za-z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": { "name": "entity.name.function.call.pycn" }
+          }
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.pycn",
+          "match": "\\+|\\-|\\*|\\*\\*|/|//|%|==|!=|<=|>=|<|>|=|\\+=|\\-=|\\*=|/=|//=|%=|\\*\\*=|&|\\||\\^|~|<<|>>|@|:=|!|\\."
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.pycn",
+          "match": "[\\[\\]\\(\\)\\{\\},;:]"
+        }
+      ]
+    }
+  }
+}

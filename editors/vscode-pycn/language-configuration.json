@@ -1,0 +1,52 @@
+{
+  "comments": {
+    "lineComment": "#"
+  },
+  "brackets": [
+    ["{", "}"],
+    ["[", "]"],
+    ["(", ")"]
+  ],
+  "autoClosingPairs": [
+    { "open": "{", "close": "}" },
+    { "open": "[", "close": "]" },
+    { "open": "(", "close": ")" },
+    { "open": "'", "close": "'", "notIn": ["string", "comment"] },
+    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] },
+    { "open": "格\"", "close": "\"", "notIn": ["string", "comment"] },
+    { "open": "原\"", "close": "\"", "notIn": ["string", "comment"] },
+    { "open": "字\"", "close": "\"", "notIn": ["string", "comment"] }
+  ],
+  "surroundingPairs": [
+    ["{", "}"],
+    ["[", "]"],
+    ["(", ")"],
+    ["'", "'"],
+    ["\"", "\""]
+  ],
+  "folding": {
+    "markers": {
+      "start": "^\\s*#\\s*region\\b",
+      "end": "^\\s*#\\s*endregion\\b"
+    }
+  },
+  "onEnterRules": [
+    {
+      "beforeText": "[:：]\\s*(#.*)?$",
+      "action": {
+        "indentAction": "indent"
+      }
+    },
+    {
+      "beforeText": "^\\s*(跳出|继续|跳过|返回|抛出)\\b.*$",
+      "action": {
+        "indentAction": "none"
+      }
+    }
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*(如果|否则若|对于|当|定义|类|尝试|捕获|最终|否则|伴随|匹配|情形)\\b.*[:：]\\s*(#.*)?$",
+    "decreaseIndentPattern": "^\\s*(跳出|继续|跳过)\\b.*$"
+  },
+  "wordPattern": "[\\u4e00-\\u9fffA-Za-z0-9_]+"
+}
