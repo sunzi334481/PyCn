@@ -517,10 +517,15 @@ TYPE_METHODS = {
 }
 
 # ============================================================
-# 7b. 标准库 API（点号属性位置优先使用；同时会进入全局名字映射，
-#      以支持「从 模块 导入 中文API」后直接调用）
+# 7b. 标准库 API（点号属性位置优先使用；普通名字位置不进入全局映射——
+#     它们只在 import 语句中用于生成中文别名绑定，避免误伤用户同名标识符）
 # ============================================================
 LIBRARY_API = {
+    # ---- print 等内置函数的高频关键字参数 ----
+    "分隔": "sep",
+    "结尾": "end",
+    "文件": "file",
+    "立即刷新": "flush",
     # ---- math ----
     "圆周率": "pi",
     "自然底数": "e",
@@ -758,7 +763,6 @@ LIBRARY_API = {
     "编码器": "JSONEncoder",
     "解码器": "JSONDecoder",
     "确保ASCII": "ensure_ascii",
-    "缩进": "indent",
     "分隔符参数": "separators",
     "默认参数": "default",
     "排序键": "sort_keys",
@@ -1393,6 +1397,3 @@ def _build_attribute_map():
 
 GLOBAL_NAME_MAP = _build_global_name_map()
 ATTRIBUTE_MAP = _build_attribute_map()
-
-# 关键字集合（供转译器 O(1) 判断）
-KEYWORDS = set(KEYWORD_MAP.keys())
