@@ -3,5 +3,8 @@
 from .translator import translate
 from .importer import install as install_import_hook
 
+# 包级自动安装导入钩子：import pycn_lang 后，Python 即可直接导入 .pycn 模块
+install_import_hook()
+
 __version__ = "0.1.0"
 __all__ = ["translate", "install_import_hook", "__version__"]
