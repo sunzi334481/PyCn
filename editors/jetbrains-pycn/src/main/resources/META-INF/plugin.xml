@@ -1,0 +1,42 @@
+<idea-plugin>
+    <id>com.pycn.lang</id>
+    <name>PyCn 中文编程语言</name>
+    <vendor>pycn-lang</vendor>
+
+    <description><![CDATA[
+        <h2>PyCn 中文编程语言</h2>
+        <p>为 <b>.pycn</b>（使用全中文语法编写 Python）提供：</p>
+        <ul>
+            <li>文件类型识别</li>
+            <li>中文关键字 / 内置函数 / 异常 / 字符串语法高亮</li>
+            <li>新建文件模板</li>
+            <li>运行配置：直接运行 .pycn 程序</li>
+        </ul>
+        <p>运行方式：<code>python -m pycn_lang run 文件.pycn</code></p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType
+            name="PyCn"
+            implementationClass="com.pycn.plugin.PycnFileType"
+            field="INSTANCE"
+            language="pycn"
+            extensions="pycn"/>
+
+        <lang.parserDefinition
+            language="pycn"
+            implementationClass="com.pycn.plugin.PycnParserDefinition"/>
+
+        <lang.syntaxHighlighterFactory
+            language="pycn"
+            implementationClass="com.pycn.plugin.PycnSyntaxHighlighterFactory"/>
+
+        <colorSettingsPage implementation="com.pycn.plugin.PycnColorSettingsPage"/>
+
+        <configurationType implementation="com.pycn.plugin.PycnRunConfigurationType"/>
+
+        <internalFileTemplate name="PyCn 文件"/>
+    </extensions>
+</idea-plugin>
