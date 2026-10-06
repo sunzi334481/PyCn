@@ -23,6 +23,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.urls]
+Homepage = "https://github.com/sunzi334481/PyCn"
+Repository = "https://github.com/sunzi334481/PyCn"
+
 [project.scripts]
 pycn = "pycn_lang.cli:main"
 

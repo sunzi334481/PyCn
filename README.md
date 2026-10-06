@@ -24,7 +24,7 @@ $ python -m pycn_lang run 你好.pycn
 
 ## 特性
 
-- **全中文语法**：39 个关键字、60+ 内置函数、70+ 异常、80+ 标准库模块、约 500 个标准库 API 全部中文化；
+- **全中文语法**：40 个关键字、65 个内置函数、63 个异常、80 个标准库模块、740+ 个标准库 API 全部中文化；
 - **用户代码不被误伤**：自定义的中文变量名 / 函数名 / 类名原样保留（Python 3 原生支持 Unicode 标识符），转译分「关键字 → 属性位置 → 全局名字」三级查表；
 - **与 Python 逐词对应**：任何 PyCn 代码都可 `compile` 转回可读 Python，报错行号与源码一致，traceback 直接显示 `.pycn` 中文行；
 - **预装标准库**：math、random、datetime、json、re、os、threading、asyncio、sqlite3、turtle 等直接 `导入 数学` 使用；
@@ -46,9 +46,10 @@ pycn/
 │   ├── 语言手册.md          # 语法完整说明（本项目的入门文档）
 │   └── 基础库与预装库.md    # 全部内置与标准库 API 清单（由 tools/gen_api_docs.py 自动生成）
 ├── tools/
-│   └── gen_api_docs.py     # 从 mappings.py 生成基础库文档
-├── examples/               # 8 个可运行示例
-├── tests/                  # 72 个回归测试
+│   ├── gen_api_docs.py     # 从 mappings.py 生成基础库文档
+│   └── gen_editor_keywords.py  # 从 mappings.py 生成三套编辑器词表
+├── examples/               # 9 个可运行示例
+├── tests/                  # 86 个回归测试
 └── editors/
     ├── vscode-pycn/        # VSCode 扩展（已打包 pycn-vscode.vsix）
     ├── jetbrains-pycn/     # JetBrains 插件源码（IDEA/PyCharm 等）
@@ -94,10 +95,10 @@ python -m pycn_lang version
 交互式环境示例：
 
 ```
->>> 打印("你好")
+pycn> 打印("你好")
 你好
->>> 定义 平方(数): 返回 数 * 数
->>> 平方(7)
+pycn> 定义 平方(数): 返回 数 * 数
+pycn> 平方(7)
 49
 ```
 
@@ -139,7 +140,7 @@ cd pycn
 python -m unittest discover -s tests
 ```
 
-72 个用例全部通过：映射完整性、转译正确性、import 钩子、端到端运行。
+86 个用例全部通过：映射完整性、转译正确性、import 钩子、端到端运行。
 
 ## 示例速览
 
