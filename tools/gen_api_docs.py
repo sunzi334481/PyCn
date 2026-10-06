@@ -54,7 +54,7 @@ def parse_groups(block: str) -> list[tuple[str, dict[str, str]]]:
                 cur = {}
             cur_name = m.group(1).strip()
             continue
-        m = re.match(r'^"(.+)"\s*:\s*"(.+)",?$', line)
+        m = re.match(r'^"(.+)"\s*:\s*"(.+)",?\s*(?:#.*)?$', line)
         if m:
             cur[m.group(1)] = m.group(2)
     if cur:
@@ -94,10 +94,12 @@ def main() -> None:
     out.append("")
 
     # 1. 关键字
-    out.append("## 1. 关键字（全部 39 个）")
+    kw_total = sum(len(items) for _, items in keywords)
+    out.append(f"## 1. 关键字（全部 {kw_total} 个）")
     out.append("")
     out.append("关键字是语言的骨架，优先级最高——即使在属性位置也会先按关键字处理。")
     out.append("")
+    kw_name, kw_map = keywords[0]
     for name, items in keywords:
         rows = sorted(items.items(), key=lambda kv: kv[0])
         out.append(md_table(rows))
@@ -105,7 +107,7 @@ def main() -> None:
     out.append("**说明**：")
     out.append("")
     out.append("- `在`→`in`、`不在`→`not in`、`不是`→`is not`、`是`→`is`，覆盖成员判断与身份判断；")
-    out.append("- `从` 与 `导入` 组合使用（`从 模块 导入 名字`），单独 `从` 表示 `from`（如 `生成自` 的 `来自` 是 `yield from`）；")
+    out.append("- `从` 与 `导入` 组合使用（`从 模块 导入 名字`），单独 `从` 表示 `from`；`生成` 与 `来自` 组合表示 `yield from`；")
     out.append("- `匹配/情形` 对应 `match/case` 模式匹配；`异步/等待` 对应 `async/await`；")
     out.append("- `跳过` 对应 `pass`，用于占位。")
     out.append("")
@@ -113,7 +115,7 @@ def main() -> None:
     # 2. 内置函数
     out.append("## 2. 内置函数")
     out.append("")
-    _, fn_map = builtin_functions[0]
+    fn_name, fn_map = builtin_functions[0]
     rows = sorted(fn_map.items(), key=lambda kv: kv[0])
     out.append(md_table(rows))
     out.append("")
@@ -123,7 +125,7 @@ def main() -> None:
     # 3. 内置常量
     out.append("## 3. 内置常量")
     out.append("")
-    _, cn_map = constants[0]
+    cn_name, cn_map = constants[0]
     rows = sorted(cn_map.items(), key=lambda kv: kv[0])
     out.append(md_table(rows))
     out.append("")
@@ -163,7 +165,7 @@ def main() -> None:
     out.append("从 日期时间 导入 日期时间类  # → from datetime import datetime as 日期时间类")
     out.append("```")
     out.append("")
-    _, mn_map = modules[0]
+    mn_name, mn_map = modules[0]
     rows = sorted(mn_map.items(), key=lambda kv: kv[0])
     out.append(md_table(rows))
     out.append("")
