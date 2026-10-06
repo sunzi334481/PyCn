@@ -32,17 +32,24 @@ _QUOTES = ("'", '"')
 # ------------------------------------------------------------
 # 名字翻译
 # ------------------------------------------------------------
-def _translate_name(name: str, after_dot: bool) -> str:
-    # 1. 关键字优先
+def _translate_name(name: str, after_dot: bool, user_names: set) -> str:
+    """翻译单个名字。
+
+    after_dot=True（属性位置）：只查类型方法/库 API 表，其余属性名原样保留——
+    不再翻译关键字与全局内置名，避免产出 `x.True` 这类怪异属性。
+    普通位置：关键字优先；全局内置名仅在未被用户用作定义名时翻译。
+    """
+    if after_dot:
+        if name in M.ATTRIBUTE_MAP:
+            return M.ATTRIBUTE_MAP[name]
+        return name
+    # 关键字优先
     if name in M.KEYWORD_MAP:
         return M.KEYWORD_MAP[name]
-    # 2. 属性位置
-    if after_dot and name in M.ATTRIBUTE_MAP:
-        return M.ATTRIBUTE_MAP[name]
-    # 3. 全局名字
-    if name in M.GLOBAL_NAME_MAP:
+    # 全局内置名：若用户已把它当作变量/参数等定义过，则保留中文
+    if name in M.GLOBAL_NAME_MAP and name not in user_names:
         return M.GLOBAL_NAME_MAP[name]
-    # 4. 用户自定义标识符，原样保留
+    # 用户自定义标识符，原样保留
     return name
 
 
@@ -59,7 +66,8 @@ def _convert_prefix(name: str) -> str | None:
         if result in ("f", "r", "b", "fr", "rf", "br", "rb", "fb", "bf"):
             return result
         return None
-    if all(ch in "frbuFRBU" for ch in name):
+    # 英文前缀白名单：f/r/b 及其合法组合；u/U 前缀已从 Python 3.12+ 移除
+    if all(ch in "frbFRB" for ch in name):
         return name
     return None
 
@@ -130,6 +138,10 @@ def _scan_fstring_expression(s: str, i: int) -> tuple[str, int]:
             expr_end = j
             break
         j += 1
+
+    # 未找到匹配的 }：原样返回剩余文本，交给 Python 报出正确位置的 SyntaxError
+    if j >= n:
+        return "{" + s[i:j], j
 
     if expr_end is None:
         expr_text = s[i:j]
@@ -430,10 +442,155 @@ def _convert_import(raw: str) -> str:
 
 
 # ------------------------------------------------------------
+# 用户定义名收集（第一遍扫描）
+# ------------------------------------------------------------
+def _collect_user_defined_names(source: str) -> set:
+    """
+    第一遍扫描：收集源码中「定义位置」出现的名字（赋值目标、def 参数与函数名、
+    for 循环变量、类名、as 别名、global/nonlocal 声明、walrus 左值、复合赋值）。
+
+    这些名字随后不再查全局内置表（如 范围/列表/长度 等 32 个常用词），
+    从而避免用户变量与内置词同名时被静默改名为英文、报错无法对上中文源码。
+    收集采用保守策略：宁可漏（退回内置翻译，行为一致）也不误伤引用位置。
+    """
+    names = set()
+    n = len(source)
+    i = 0
+    stmt_start = True
+    after_dot = False
+    paren_depth = 0
+    seen_def_line = False       # 本行已见过「定义」，其后的 ( 是参数区
+    def_paren_depth = 0         # >0 表示当前位于 def 参数括号内（嵌套深度）
+    after_eq_in_def = False     # def 参数区内刚见过 '='（默认值），其后的名字是引用
+    for_collect = False         # 在「对于 ... 在」之间收集循环变量
+    def_name_pending = False    # 刚见过「定义」，下一个名字是函数名
+    class_name_pending = False  # 刚见过「类」，下一个名字是类名
+    as_pending = False          # 刚见过「作为」，下一个名字是别名
+    gl_pending = False          # 刚见过「全局」/「非局部」
+
+    def remember(name: str) -> None:
+        # 关键字、魔术方法名（__xx__）与内置常量别名（自己/本类 等）不属于
+        # 用户命名空间，不收集——它们在任意位置都必须翻译
+        if (
+            name
+            and name not in M.KEYWORD_MAP
+            and name not in M.DUNDER_MAP
+            and name not in M.BUILTIN_CONSTANTS
+        ):
+            names.add(name)
+
+    while i < n:
+        c = source[i]
+
+        # 注释 / 字符串 / 数字：整体跳过
+        if c == "#":
+            j = source.find("\n", i)
+            i = n if j == -1 else j
+            continue
+        if c in _QUOTES:
+            _, i = _scan_string(source, i, "")
+            continue
+        if c.isdigit() or (c == "." and i + 1 < n and source[i + 1].isdigit()):
+            i = _scan_number(source, i)
+            continue
+
+        # 名字
+        if _is_ident_start(c) and not after_dot:
+            j = i + 1
+            while j < n and _is_ident_cont(source[j]):
+                j += 1
+            name = source[i:j]
+            k = j
+            while k < n and source[k] in " \t":
+                k += 1
+            nxt = source[k] if k < n else ""
+
+            if name == "定义" and stmt_start:
+                def_name_pending = True
+                seen_def_line = True
+            elif name == "类" and stmt_start:
+                class_name_pending = True
+            elif name == "对于" and stmt_start:
+                for_collect = True
+            elif name == "作为":
+                as_pending = True
+            elif name in ("全局", "非局部") and stmt_start:
+                gl_pending = True
+            elif def_name_pending:
+                remember(name)
+                def_name_pending = False
+            elif class_name_pending:
+                remember(name)
+                class_name_pending = False
+            elif for_collect and name == "在":
+                for_collect = False
+            elif for_collect:
+                remember(name)
+            elif as_pending:
+                remember(name)
+                as_pending = False
+            elif gl_pending:
+                remember(name)
+            elif def_paren_depth == 1 and not after_eq_in_def:
+                # def 参数：名字后跟 , ) = : 视为参数名（默认值 / 注解类型不收集）
+                if nxt in (",", ")", "=", ":"):
+                    remember(name)
+            elif nxt == "=" and paren_depth == 0 and (k + 1 >= n or source[k + 1] != "="):
+                remember(name)
+            elif nxt in "+-" and k + 1 < n and source[k + 1] == "=":
+                remember(name)  # += / -=
+            elif nxt == ":" and k + 1 < n and source[k + 1] == "=":
+                remember(name)  # walrus :=
+
+            i = j
+            stmt_start = False
+            after_dot = False
+            continue
+
+        # 点号：属性位置的名字不参与定义收集
+        if c == ".":
+            after_dot = True
+            i += 1
+            continue
+
+        # 其余字符
+        if c == "(":
+            paren_depth += 1
+            if seen_def_line:
+                def_paren_depth += 1
+        elif c == ")":
+            paren_depth = max(0, paren_depth - 1)
+            if def_paren_depth > 0:
+                def_paren_depth -= 1
+                if def_paren_depth == 0:
+                    after_eq_in_def = False
+        elif c == "," and def_paren_depth == 1:
+            after_eq_in_def = False
+        elif c == "=" and def_paren_depth == 1:
+            after_eq_in_def = True
+        if c == "\n" or c == ";":
+            stmt_start = True
+            after_dot = False
+            seen_def_line = False
+            def_name_pending = False
+            class_name_pending = False
+            as_pending = False
+            for_collect = False
+            gl_pending = False
+        elif c not in " \t":
+            stmt_start = False
+            after_dot = False
+        i += 1
+
+    return names
+
+
+# ------------------------------------------------------------
 # 主转译函数
 # ------------------------------------------------------------
 def translate(source: str) -> str:
     """将 .pycn 源码转译为标准 Python 源码。"""
+    user_names = _collect_user_defined_names(source)
     n = len(source)
     out = []
     i = 0
@@ -496,7 +653,7 @@ def translate(source: str) -> str:
                 prefix = _convert_prefix(name)
                 if prefix is not None:
                     token, i = _scan_string(source, k, prefix)
-                    out.append(source[j:k])  # 前缀与引号间的空白
+                    # 不输出 source[j:k]：前缀与引号间的空白若在语句起始会产出非法缩进
                     out.append(token)
                     after_dot = False
                     stmt_start = False
@@ -510,6 +667,13 @@ def translate(source: str) -> str:
                 and (k + 1 >= n or source[k + 1] != "=")
                 and name not in M.KEYWORD_MAP
             ):
+                # 用户已定义过的名字优先保留（调用自己函数的同名参数）
+                if name in user_names:
+                    out.append(name)
+                    after_dot = False
+                    stmt_start = False
+                    i = j
+                    continue
                 # 关键字参数位置：库 API 名优先（如 键=key），再退类型方法/内置
                 kw_name = M.LIBRARY_API.get(name)
                 if kw_name is None:
@@ -522,7 +686,7 @@ def translate(source: str) -> str:
                 i = j
                 continue
 
-            out.append(_translate_name(name, after_dot))
+            out.append(_translate_name(name, after_dot, user_names))
             after_dot = False
             stmt_start = False
             i = j
